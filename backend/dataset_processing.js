@@ -23,11 +23,11 @@ const loadCSV = (relativePath, targetArray) => {
 };
 
 // Load the bucketmap and bucket CSV files (updated paths)
-loadCSV('../bucketmap.csv', bucketmap); // CSV file located in the root directory
-loadCSV('../bucket.csv', buckets); // CSV file located in the root directory
+loadCSV('bucketmap.csv', bucketmap); // CSV file located in the root directory
+loadCSV('bucket.csv', buckets); // CSV file located in the root directory
 
 // Read and process dataset_clean1.csv (updated path)
-fs.createReadStream('../dataset_clean1.csv') // CSV file located in the root directory
+fs.createReadStream('dataset_clean1.csv') // CSV file located in the root directory
   .pipe(csv())
   .on('data', (row) => {
     let disease = row[0];

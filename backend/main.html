@@ -125,38 +125,6 @@
   <script src="/backend/symptoms.js" type="text/javascript"></script>
   <script src="/backend/symptomsdata.js" type="text/javascript"></script>
 
-  <script>
-    // Function to add symptom cards dynamically
-    function appendNewSymp(symptom) {
-      if (symptom) {
-        $('#cards').append(`
-          <div class="card w-75 center text-center shadow p-3 mb-5 bg-white rounded boxy" id="${symptom}">
-            <div class="card-body">
-              <p class="card-title">Do you have/feel?</p>
-              <h5 class="card-text">${symptom}</h5>
-              <a class="btn btn-success" onclick="appendNewSymp('${symptom}');"> YES </a>
-              <a class="btn btn-danger" onclick="appendNewSymp(null);"> NO </a>
-            </div>
-          </div>
-        `);
-      }
-    }
-
-    // Function to handle the "Find Out" button click
-    $('#symp_upload').click(function() {
-      var symptoms = [];
-      $('#tags .badge').each(function() {
-        symptoms.push($(this).text());
-      });
-
-      // You can now send the symptoms data to the backend or use it for further processing
-      console.log('Symptoms:', symptoms);
-
-      // Dynamically add the next set of cards for symptoms
-      symptoms.forEach(function(symptom) {
-        appendNewSymp(symptom);
-      });
-    });
-  </script>
+ 
 </body>
 </html>

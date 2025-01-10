@@ -1,34 +1,34 @@
 import express from 'express';
 import multer from 'multer';
+import Papa from 'papaparse';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import Papa from 'papaparse';
 import { drugExtraction } from './medicine_extractor.js';
 import { calculateAprioriConfidence, predDis } from './symptoms.js';
 
-// Handle __dirname in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const app = express();
 const upload = multer();
+
+// Define the absolute paths to the CSV files
+const bucketmapPath = 'C:\\DE\\MedWise-AI\\backend\\bucketmap.csv';
+const bucketPath = 'C:\\DE\\MedWise-AI\\backend\\bucket.csv';
+const datasetClean1Path = 'C:\\DE\\MedWise-AI\\backend\\dataset_clean1.csv';
 
 // Load CSV files and parse them
 let bucketmap = [];
 let bucket = [];
 let datasetClean = [];
 
-const loadCSV = (relativePath, targetArray) => {
-  const absolutePath = path.join(__dirname, relativePath);
-  fs.readFile(absolutePath, 'utf8', (err, data) => {
+// Load CSV files into memory
+const loadCSV = (filePath, targetArray) => {
+  fs.readFile(filePath, 'utf8', (err, data) => {
     if (err) {
-      console.error(`Error reading ${absolutePath}:`, err);
+      console.error(`Error reading ${filePath}:`, err);
       return;
     }
-    const parsedData = Papa.parse(data, { header: true });
+    const parsedData = Papa.parse(data, { header: true, skipEmptyLines: true });
     if (parsedData.errors.length > 0) {
-      console.error(`Error parsing ${relativePath}:`, parsedData.errors);
+      console.error(`Error parsing ${filePath}:`, parsedData.errors);
       return;
     }
     targetArray.push(...parsedData.data);
@@ -36,11 +36,25 @@ const loadCSV = (relativePath, targetArray) => {
 };
 
 // Load the CSV files into memory (updated paths)
-loadCSV('./bucketmap.csv', bucketmap); // CSV file located in the root directory
-loadCSV('./bucket.csv', bucket); // CSV file located in the root directory
-loadCSV('./dataset_clean1.csv', datasetClean); // CSV file located in the root directory
+loadCSV(bucketmapPath, bucketmap);
+loadCSV(bucketPath, bucket);
+loadCSV(datasetClean1Path, datasetClean);
 
 app.use(express.json());
+
+// Serve static files (like images, stylesheets, and HTML) from the current directory
+app.use(express.static('C:\\DE\\MedWise-AI\\backend'));
+
+// Define a route for the root URL ("/") to serve main.html
+app.get('/', (req, res) => {
+  const filePath = 'C:\\DE\\MedWise-AI\\backend\\main.html';  // Direct path
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error('Error sending file:', err);
+      res.status(500).send('Internal Server Error');
+    }
+  });
+});
 
 // Route to handle drug extraction from an image
 app.post('/image', upload.single('file'), (req, res) => {

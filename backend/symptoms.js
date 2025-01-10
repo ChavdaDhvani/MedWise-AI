@@ -2,14 +2,10 @@ import path from 'path';
 import fs from 'fs';
 import csv from 'csv-parser';
 
-// Get the directory name using import.meta.url
-const __filename = new URL(import.meta.url).pathname;
-const __dirname = path.dirname(__filename);
-
-// Define the absolute paths to the CSV files in the backend directory
-const bucketmapPath = path.join(__dirname, 'bucketmap.csv');
-const bucketPath = path.join(__dirname, 'bucket.csv');
-const datasetClean1Path = path.join(__dirname, 'dataset_clean1.csv');
+// Define the absolute paths to the CSV files
+const bucketmapPath = 'C:\\DE\\MedWise-AI\\backend\\bucketmap.csv';
+const bucketPath = 'C:\\DE\\MedWise-AI\\backend\\bucket.csv';
+const datasetClean1Path = 'C:\\DE\\MedWise-AI\\backend\\dataset_clean1.csv';
 
 // Log the paths to ensure they're correct
 console.log('bucketmapPath:', bucketmapPath);
