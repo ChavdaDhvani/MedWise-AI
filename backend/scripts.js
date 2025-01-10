@@ -1,5 +1,3 @@
-// script.js
-
 var symps = [];
 var sbox = document.getElementById("sbox");
 
@@ -8,7 +6,7 @@ let bucketmap = [];
 let bucket = [];
 let diseases = [];
 
-// Load CSV files
+// Load CSV files from the correct path
 $.get('/bucketmap.csv', function(data) {
     let rows = data.split('\n');
     rows.forEach(function(row) {
@@ -147,9 +145,8 @@ function SymFunc(data){
     }
 }
 
-
 // Fetching the drugs.json file from the static directory
-fetch('/static/drugs.json')
+fetch('/drugs.json')
   .then(response => response.json())
   .then(data => {
     console.log(data); // You can log the data to see it
@@ -169,7 +166,6 @@ fetch('/static/drugs.json')
     console.error('Error fetching drugs.json:', error);
   });
 
-
 function RecieveFunc(data){
     $("#details").empty();
     $("#cards").empty();
@@ -182,3 +178,4 @@ function RecieveFunc(data){
         });
     }
 }
+

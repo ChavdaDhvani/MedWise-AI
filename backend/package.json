@@ -2,7 +2,7 @@
   "name": "medwise-ai",
   "version": "1.0.0",
   "description": "A healthcare AI application to assist with medical tasks.",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "start": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -21,11 +21,11 @@
     "url": "git+https://github.com/ChavdaDhvani/MedWise-AI.git"
   },
   "dependencies": {
+    "csv-parser": "^3.0.0",
     "express": "^4.21.2",
     "multer": "^1.4.5-lts.1",
-    "tesseract.js": "^6.0.0",
     "papaparse": "^5.3.1",
-    "csv-parser": "^3.0.0"
+    "tesseract.js": "^6.0.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.7"

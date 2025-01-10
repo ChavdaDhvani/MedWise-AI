@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Papa from 'papaparse';
 import { drugExtraction } from './medicine_extractor.js';
-import { predDis } from './symptoms.js';
+import { calculateAprioriConfidence, predDis } from './symptoms.js';
 
 // Handle __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -35,16 +35,14 @@ const loadCSV = (relativePath, targetArray) => {
   });
 };
 
-
-
-// Load the CSV files into memory
-loadCSV('./bucketmap.csv', bucketmap);
-loadCSV('./bucket.csv', bucket);
-loadCSV('./dataset_clean1.csv', datasetClean);
-
+// Load the CSV files into memory (updated paths)
+loadCSV('./bucketmap.csv', bucketmap); // CSV file located in the root directory
+loadCSV('./bucket.csv', bucket); // CSV file located in the root directory
+loadCSV('./dataset_clean1.csv', datasetClean); // CSV file located in the root directory
 
 app.use(express.json());
 
+// Route to handle drug extraction from an image
 app.post('/image', upload.single('file'), (req, res) => {
   const img = req.file.buffer;
   drugExtraction(img)
@@ -57,6 +55,7 @@ app.post('/image', upload.single('file'), (req, res) => {
     });
 });
 
+// Route to handle disease prediction based on symptoms
 app.post('/disease', (req, res) => {
   const { symptoms } = req.body;
   try {
@@ -68,6 +67,7 @@ app.post('/disease', (req, res) => {
   }
 });
 
+// Start the server
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

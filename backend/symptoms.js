@@ -1,109 +1,111 @@
-// symptoms.js
+import path from 'path';
+import fs from 'fs';
+import csv from 'csv-parser';
 
-const fs = require('fs');
-const csv = require('csv-parser');
+// Get the directory name using import.meta.url
+const __filename = new URL(import.meta.url).pathname;
+const __dirname = path.dirname(__filename);
 
-// Load CSV files
+// Define the absolute paths to the CSV files in the backend directory
+const bucketmapPath = path.join(__dirname, 'bucketmap.csv');
+const bucketPath = path.join(__dirname, 'bucket.csv');
+const datasetClean1Path = path.join(__dirname, 'dataset_clean1.csv');
+
+// Log the paths to ensure they're correct
+console.log('bucketmapPath:', bucketmapPath);
+console.log('bucketPath:', bucketPath);
+console.log('datasetClean1Path:', datasetClean1Path);
+
+// Load CSV files with error handling
+async function loadCSV(filePath) {
+  return new Promise((resolve, reject) => {
+    const data = [];
+    fs.createReadStream(filePath)
+      .pipe(csv())
+      .on('data', (row) => {
+        data.push(row);
+      })
+      .on('end', () => {
+        console.log(`${path.basename(filePath)} loaded`);
+        resolve(data);
+      })
+      .on('error', (err) => {
+        console.error(`Error reading ${filePath}:`, err);
+        reject(err);
+      });
+  });
+}
+
+// Load CSV files asynchronously
 let bucketmap = [];
 let bucket = [];
 let diseases = [];
 
-fs.createReadStream('/bucketmap.csv')
-  .pipe(csv())
-  .on('data', (row) => {
-    bucketmap.push(row);
-  })
-  .on('end', () => {
-    console.log('bucketmap.csv loaded');
-  });
+async function loadData() {
+  try {
+    bucketmap = await loadCSV(bucketmapPath);
+    bucket = await loadCSV(bucketPath);
+    diseases = await loadCSV(datasetClean1Path);
+  } catch (err) {
+    console.error('Error loading CSV files:', err);
+  }
+}
 
-fs.createReadStream('/bucket.csv')
-  .pipe(csv())
-  .on('data', (row) => {
-    bucket.push(row);
-  })
-  .on('end', () => {
-    console.log('bucket.csv loaded');
-  });
+// Call the loadData function to load all CSVs at once
+await loadData();
 
-fs.createReadStream('/dataset_clean1.csv')
-  .pipe(csv())
-  .on('data', (row) => {
-    diseases.push(row);
-  })
-  .on('end', () => {
-    console.log('dataset_clean1.csv loaded');
-  });
-
+// Apriori confidence calculation
 function calculateAprioriConfidence(X, Y, buckets) {
-    let occr_X = 0;
-    let occr_Y = 0;
+  let occr_X = 0;
+  let occr_Y = 0;
 
-    buckets.forEach((bucket) => {
-      if (Array.isArray(X)) {
-        if (X.every((val) => bucket.includes(val))) {
-          occr_X++;
-        }
-      } else {
-        if (bucket.includes(X)) {
-          occr_X++;
-        }
-      }
-
-      if (Array.isArray(Y)) {
-        if (Y.every((val) => bucket.includes(val))) {
-          occr_Y++;
-        }
-      } else {
-        if (bucket.includes(Y)) {
-          occr_Y++;
-        }
-      }
-    });
-
-    if (occr_X === 0) {
-      return 0;
+  buckets.forEach((bucket) => {
+    if (Array.isArray(X) ? X.every((val) => bucket.includes(val)) : bucket.includes(X)) {
+      occr_X++;
     }
-    return (occr_Y / occr_X) * 100;
+    if (Array.isArray(Y) ? Y.every((val) => bucket.includes(val)) : bucket.includes(Y)) {
+      occr_Y++;
+    }
+  });
+
+  return occr_X === 0 ? 0 : (occr_Y / occr_X) * 100;
 }
 
+// Predict disease based on symptoms
 function predDis(symptomList, buckets) {
-    let diseaseScore = {};
-    let diseaseBucket = {};
-    let sure = 0;
-    let top3 = [];
+  const diseaseScore = {};
+  let top3 = [];
 
-    buckets.forEach((bucket) => {
-      let bucketLen = bucket.length;
-      let score = symptomList.filter((symptom) => bucket.includes(symptom)).length;
-      let intersectionLen = score;
-      let scorePercentage = (score / symptomList.length) * 100;
-      let score1 = (intersectionLen / bucketLen) * 100;
+  buckets.forEach((bucket) => {
+    const bucketLen = bucket.length;
+    const score = symptomList.filter((symptom) => bucket.includes(symptom)).length;
+    const scorePercentage = (score / symptomList.length) * 100;
+    const score1 = (score / bucketLen) * 100;
 
-      if (scorePercentage === 100 && score1 === 100) {
-        sure = 1;
-        let disease = getDiseaseGivenBucket(bucket);
-        console.log(`It is most likely ${disease}`);
-        return;
-      }
+    if (scorePercentage === 100 && score1 === 100) {
+      const disease = getDiseaseGivenBucket(bucket);
+      console.log(`It is most likely ${disease}`);
+      return;
+    }
 
-      if (scorePercentage > 0) {
-        let disease = getDiseaseGivenBucket(bucket);
-        diseaseScore[disease] = scorePercentage;
-        diseaseBucket[disease] = bucket;
-      }
-    });
+    if (scorePercentage > 0) {
+      const disease = getDiseaseGivenBucket(bucket);
+      diseaseScore[disease] = scorePercentage;
+    }
+  });
 
-    top3 = Object.entries(diseaseScore)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3);
+  // Sort diseases by score and return top 3
+  top3 = Object.entries(diseaseScore)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
 
-    return top3;
+  return top3;
 }
 
+// Get disease name from bucket (Placeholder logic)
 function getDiseaseGivenBucket(bucket) {
-    // Placeholder for actual disease determination logic
-    return 'DiseaseName';  // Return a default disease name for now
+  // You can replace this logic with actual disease determination
+  return 'DiseaseName'; // Return a default disease name for now
 }
 
-module.exports = { calculateAprioriConfidence, predDis };
+export { calculateAprioriConfidence, predDis };

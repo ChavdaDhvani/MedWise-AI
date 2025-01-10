@@ -1,15 +1,14 @@
-// medicine_extractor.js
-
-const Tesseract = require('tesseract.js');
-const fs = require('fs');
-const csv = require('csv-parser');
+import Tesseract from 'tesseract.js';
+import fs from 'fs';
+import csv from 'csv-parser';
 
 // Load CSV files
 let bucketmap = [];
 let bucket = [];
 let diseases = [];
 
-fs.createReadStream('/bucketmap.csv')
+// Adjusted paths for the CSV files
+fs.createReadStream('bucketmap.csv')
   .pipe(csv())
   .on('data', (row) => {
     bucketmap.push(row);
@@ -18,7 +17,7 @@ fs.createReadStream('/bucketmap.csv')
     console.log('bucketmap.csv loaded');
   });
 
-fs.createReadStream('/bucket.csv')
+fs.createReadStream('bucket.csv')
   .pipe(csv())
   .on('data', (row) => {
     bucket.push(row);
@@ -27,7 +26,7 @@ fs.createReadStream('/bucket.csv')
     console.log('bucket.csv loaded');
   });
 
-fs.createReadStream('/dataset_clean1.csv')
+fs.createReadStream('dataset_clean1.csv')
   .pipe(csv())
   .on('data', (row) => {
     diseases.push(row);
@@ -36,7 +35,7 @@ fs.createReadStream('/dataset_clean1.csv')
     console.log('dataset_clean1.csv loaded');
   });
 
-function drugExtraction(imageFile) {
+export function drugExtraction(imageFile) {
   return new Promise((resolve, reject) => {
     Tesseract.recognize(
       imageFile,
@@ -63,6 +62,3 @@ function extractDrugInformation(text) {
     diseases: diseases,
   };
 }
-
-module.exports = { drugExtraction };
-
