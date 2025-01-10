@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { drugExtraction } from './medicine_extractor.js';
 import { calculateAprioriConfidence, predDis } from './symptoms.js';
+import { symptomsData } from './symptomsdata.js';
 
 const app = express();
 const upload = multer();
@@ -79,6 +80,20 @@ app.post('/disease', (req, res) => {
     console.error('Error in predDis:', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// New route for symptom suggestions
+app.get('/symptom-suggestions', (req, res) => {
+  const { query } = req.query; // Get query parameter for the symptom input
+  if (!query) {
+    return res.status(400).json({ error: 'Query parameter is required' });
+  }
+
+  const suggestions = symptomsData.filter(symptom =>
+    symptom.toLowerCase().includes(query.toLowerCase())
+  );
+
+  res.json(suggestions);
 });
 
 // Start the server
