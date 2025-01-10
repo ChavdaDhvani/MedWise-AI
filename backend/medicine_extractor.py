@@ -1,47 +1,41 @@
-import easyocr
-import numpy as np
-import json
-import spacy
+from PIL import Image
+import pytesseract
+import requests
+from io import BytesIO
 
-# Load the spaCy model for general NER
-nlp = spacy.load("en_core_web_sm")
+# If you're using an Azure API or Google Vision API, you can integrate them here.
 
-# Load drug dictionary
-with open('drugs.json', 'r') as f:
-    drugs_dict = json.load(f)
+def drug_extraction(image_file):
+    """
+    Extract drug-related information from the uploaded image.
+    This function uses OCR (pytesseract) to extract text from the image.
+    You can replace this with a more sophisticated method (e.g., Azure Cognitive Services).
+    """
+    # Open the image file
+    img = Image.open(image_file)
 
-def text_from_image(img):
-    # Read the image file and convert to a format EasyOCR can process
-    img_data = np.array(img.read())  # Read image data as numpy array
-    reader = easyocr.Reader(['en'])  # Initialize EasyOCR reader
-    result = reader.readtext(img_data)  # Perform OCR on the image
+    # Use pytesseract to extract text from the image
+    extracted_text = pytesseract.image_to_string(img)
 
-    # Extract text from the result
-    all_text = []
-    for (bbox, text, prob) in result:
-        all_text.append(text)  # Collect recognized text
+    # You can further process the extracted text to identify drug names, dosages, etc.
+    # For now, we are just returning the extracted text as a placeholder.
+    annotations = extract_drug_information(extracted_text)
 
-    return all_text
+    return annotations
 
-def drug_extraction(img):
-    all_text_as_list = text_from_image(img)  # Get text from image
-    all_text = " ".join(all_text_as_list)  # Combine text into a single string
+def extract_drug_information(text):
+    """
+    Process the extracted text to find drug-related information.
+    This is a placeholder function. You can add more sophisticated logic here.
+    """
+    # For demonstration, we will return the raw text as "annotations".
+    # You can use regex or NLP techniques to find specific drug names, dosages, etc.
+    annotations = {
+        "text": text,
+        "entities": []  # Placeholder for any entities like drug names
+    }
 
-    # Use spaCy's NLP model to process the text and extract entities
-    doc = nlp(all_text)
-    drug_entities = []
-    
-    # Loop through the detected entities
-    for ent in doc.ents:
-        if ent.label_ == "PRODUCT":  # 'PRODUCT' often includes drugs in general NER
-            if ent.text.lower() in drugs_dict["drugs"]:  # Match against the drugs dictionary
-                drug_entities.append(ent.text)
-    
-    print("Extracted Drug Entities:", drug_entities)
-    return drug_entities
+    # Example: Add logic to find drug names or dosages from the extracted text.
+    # You can use regular expressions or NLP models to extract specific information.
 
-if __name__ == "__main__":
-    # Use an image containing text for drug extraction
-    # Example: img = open('image.jpg', 'rb')
-    img = open('path_to_your_image.jpg', 'rb')  # Update the path to your image
-    drug_extraction(img)
+    return annotations

@@ -1,2 +1,0 @@
-git+https://github.com/NLPatVCU/medaCy_model_clinical_notes.git	
-medacy-model-clinical-notes==1.0.1
