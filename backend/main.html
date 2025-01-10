@@ -39,7 +39,7 @@
     <br/>
     <br/>
 
-    <div class="card w-75 h-100 center text-center shadow p-3 mb-5 bg-white rounded" id="sbox">
+    <div class="card w-75 center text-center shadow p-3 mb-5 bg-white rounded" id="sbox">
       <div class="card-body">
         <form id="send" action="" method="">
           <div class="row">
@@ -85,7 +85,7 @@
                   <div id="tags"></div>
                   <div id="suggestions" class="list-group" style="position: absolute; width: 100%; z-index: 1000; background-color: white; display: none;"></div>
                   <br>    
-                  <button type="button" class="btn btn-warning" id="symp_upload" style="height:50px;width:200px;">Find Out</button>
+                  <button type="button" class="btn btn-warning" id="symp_upload" style="height:50px;width:200px;" onclick="showMoreSymptoms();">Find Out</button>
                 </div>
               </div>
             </div>
@@ -103,6 +103,12 @@
 
     <div id="cards">
       <!-- Dynamically added cards will appear here -->
+    </div>
+
+    <div id="selected-cards">
+      <h3>Your symptoms</h3>
+      <div id="positive"></div>
+      <button type="button" id="disease" class="btn btn-warning btn-lg">SEARCH</button>
     </div>
   </div>
 
@@ -152,6 +158,59 @@
         $('#suggestions').hide();
       });
     });
+
+    // Function to dynamically add symptom cards
+    function addSymptomCard(symptom) {
+      const cardHtml = `
+        <div class="card w-75 center text-center shadow p-3 mb-5 bg-white rounded boxy" id="${symptom}">
+          <div class="card-body">
+            <p class="card-title">Do you have/feel ?</p>
+            <h5 class="card-text">${symptom}</h5>
+            <a class="btn btn-success" onclick="addSymptomToSearch('${symptom}');"> YES </a>
+            <a class="btn btn-danger" onclick="removeSymptomCard('${symptom}');"> NO </a>
+          </div>
+        </div>
+      `;
+      $('#cards').append(cardHtml);
+    }
+
+    // Function to append selected symptoms to the search section
+    function addSymptomToSearch(symptom) {
+      // Add symptom to the positive section in selected-cards
+      const symptomHtml = `
+        <div class="card w-75 center text-center shadow p-3 mb-5 bg-white rounded boxy" id="search-${symptom}">
+          <div class="card-body">
+            <p class="card-title">Selected Symptom</p>
+            <h5 class="card-text">${symptom}</h5>
+            <button class="btn btn-outline-secondary" onclick="appendSymp();" type="button">Add</button>
+            <a class="btn btn-danger" onclick="removeSymptomFromSearch('${symptom}');">Remove</a>
+          </div>
+        </div>
+      `;
+      $('#positive').append(symptomHtml);
+      // Remove card from the "cards" section
+      $(`#${symptom}`).remove();
+    }
+
+    // Function to remove symptom card when NO is clicked
+    function removeSymptomCard(symptom) {
+      $(`#${symptom}`).remove();
+    }
+
+    // Function to remove symptom from the search section
+    function removeSymptomFromSearch(symptom) {
+      $(`#search-${symptom}`).remove();
+    }
+
+    // Function to show more symptoms after clicking "Find Out"
+    function showMoreSymptoms() {
+      // Example: Fetch more symptoms from the server or from a predefined list
+      const additionalSymptoms = ['Fatigue', 'Nausea', 'Headache', 'Dizziness'];
+
+      additionalSymptoms.forEach(function(symptom) {
+        addSymptomCard(symptom);
+      });
+    }
   </script>
 
 </body>

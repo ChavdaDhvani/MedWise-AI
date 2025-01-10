@@ -1,4 +1,4 @@
-var symps = [];
+var symps = [];  // Array to store confirmed symptoms
 var sbox = document.getElementById("sbox");
 
 // Initialize arrays to store CSV data
@@ -44,37 +44,41 @@ $(document).ready(function(){
     }
 });
 
+// Function to append new symptom to the list
 function appendNewSymp(name){
     console.log(name);
-    symps.push(name.replace("-", " "));
+    symps.push(name.replace("-", " "));  // Add confirmed symptom to the list
     $("#positive").append(' <span class="badge badge-secondary">'+ name +'</span> ');
-    $('#'+name).remove();
+    $('#'+name).remove();  // Remove the card after confirmation
 }
 
+// Function to delete symptom card
 function deleteSymp(name){
-    $('#'+name).remove();
+    $('#'+name).remove();  // Remove the card if "No" is clicked
 }
 
+// Function to append symptom to the UI
 function appendSymp(){
     var a = $("#symptom").val();
-    symps.push(a);
+    symps.push(a);  // Add the symptom to the list
     $("#tags").append('<span> </span><span class="badge badge-secondary">'+a+'</span>');
-    $("#symptom").val("");
+    $("#symptom").val("");  // Clear the input field
 }
 
+// Function to upload symptoms and get disease prediction
 $("#symp_upload").click(function(){
     $.ajax({
         url: '/disease',
         type: 'POST',
         data: JSON.stringify({
-            'symptoms': symps
+            'symptoms': symps  // Send the confirmed symptoms to the backend
         }),
         dataType: 'json',
         contentType: "application/json",
         success: function(response){
             console.log(response);
-            symps = [];
-            SymFunc(response);
+            symps = [];  // Clear the symptoms list after submission
+            SymFunc(response);  // Handle the disease suggestions
             console.log("DONE!");
         },
         error: function(error){
@@ -83,19 +87,20 @@ $("#symp_upload").click(function(){
     });
 });
 
+// Function to send symptoms and get disease suggestions
 function sendSymp(){
     $.ajax({
         url: '/find',
         type: 'POST',
         data: JSON.stringify({
-            'symptoms': symps
+            'symptoms': symps  // Send the symptoms to the backend
         }),
         dataType: 'text',
         contentType: "application/json",
         success: function(response){
             console.log(response);
-            symps = [];
-            showDis(response);
+            symps = [];  // Clear the symptoms list after submission
+            showDis(response);  // Show the disease suggestions
             console.log("DONE!");
         },
         error: function(error){
@@ -104,31 +109,7 @@ function sendSymp(){
     });
 }
 
-$("#but_upload").click(function(){
-    var fd = new FormData();
-    var files = $('#file')[0].files[0];
-    if(files == undefined ){
-        alert("Please insert an image");
-    } else {
-        fd.append('file', files);
-        $("#details").append('<div class="spinner-border" style="width: 3rem; height: 3rem;" role="status"> <span class="sr-only">Loading...</span></div>');
-        $.ajax({
-            url: '/image',
-            type: 'POST',
-            data: fd,
-            contentType: false,
-            processData: false,
-            success: function(response){
-                console.log(response);
-                RecieveFunc(response);
-            },
-            error: function(error){
-                console.log("Error: ", error);
-            }
-        });
-    }
-});
-
+// Function to handle disease prediction results
 function SymFunc(data){
     $("#cards").empty();
     $("#details").empty();
@@ -145,27 +126,7 @@ function SymFunc(data){
     }
 }
 
-// Fetching the drugs.json file from the static directory
-fetch('/drugs.json')
-  .then(response => response.json())
-  .then(data => {
-    console.log(data); // You can log the data to see it
-    // You can now use the data for your project, for example, populating a dropdown or list
-    const drugsList = data.drugs;
-    const drugSelect = document.getElementById('drug-select'); // Assuming you have a select element
-
-    // Populate the dropdown with drug names
-    drugsList.forEach(drug => {
-      const option = document.createElement('option');
-      option.value = drug;
-      option.textContent = drug;
-      drugSelect.appendChild(option);
-    });
-  })
-  .catch(error => {
-    console.error('Error fetching drugs.json:', error);
-  });
-
+// Function to handle received data from image extraction
 function RecieveFunc(data){
     $("#details").empty();
     $("#cards").empty();
@@ -178,4 +139,3 @@ function RecieveFunc(data){
         });
     }
 }
-

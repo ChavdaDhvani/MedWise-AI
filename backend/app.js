@@ -71,16 +71,19 @@ app.post('/image', upload.single('file'), (req, res) => {
 });
 
 // Route to handle disease prediction based on symptoms
+// Route to handle disease prediction based on symptoms
 app.post('/disease', (req, res) => {
   const { symptoms } = req.body;
   try {
+    // Assuming calculateAprioriConfidence or predDis function is used for prediction
     const top3Diseases = predDis(symptoms, bucket);
-    res.json(top3Diseases);
+    res.json(top3Diseases);  // Return the predicted diseases
   } catch (err) {
     console.error('Error in predDis:', err);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // New route for symptom suggestions
 app.get('/symptom-suggestions', (req, res) => {
