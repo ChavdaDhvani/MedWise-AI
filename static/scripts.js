@@ -147,6 +147,29 @@ function SymFunc(data){
     }
 }
 
+
+// Fetching the drugs.json file from the static directory
+fetch('/static/drugs.json')
+  .then(response => response.json())
+  .then(data => {
+    console.log(data); // You can log the data to see it
+    // You can now use the data for your project, for example, populating a dropdown or list
+    const drugsList = data.drugs;
+    const drugSelect = document.getElementById('drug-select'); // Assuming you have a select element
+
+    // Populate the dropdown with drug names
+    drugsList.forEach(drug => {
+      const option = document.createElement('option');
+      option.value = drug;
+      option.textContent = drug;
+      drugSelect.appendChild(option);
+    });
+  })
+  .catch(error => {
+    console.error('Error fetching drugs.json:', error);
+  });
+
+
 function RecieveFunc(data){
     $("#details").empty();
     $("#cards").empty();
