@@ -1,4 +1,5 @@
-var symps = [];  // Array to store confirmed symptoms
+// Array to store confirmed symptoms
+var symps = [];
 var sbox = document.getElementById("sbox");
 
 // Initialize arrays to store CSV data
@@ -42,100 +43,153 @@ $(document).ready(function(){
         introJs().start();
         localStorage.setItem("key", "keyValue");
     }
-});
 
-// Function to append new symptom to the list
-function appendNewSymp(name){
-    console.log(name);
-    symps.push(name.replace("-", " "));  // Add confirmed symptom to the list
-    $("#positive").append(' <span class="badge badge-secondary">'+ name +'</span> ');
-    $('#'+name).remove();  // Remove the card after confirmation
-}
-
-// Function to delete symptom card
-function deleteSymp(name){
-    $('#'+name).remove();  // Remove the card if "No" is clicked
-}
-
-// Function to append symptom to the UI
-function appendSymp(){
-    var a = $("#symptom").val();
-    symps.push(a);  // Add the symptom to the list
-    $("#tags").append('<span> </span><span class="badge badge-secondary">'+a+'</span>');
-    $("#symptom").val("");  // Clear the input field
-}
-
-// Function to upload symptoms and get disease prediction
-$("#symp_upload").click(function(){
-    $.ajax({
-        url: '/disease',
-        type: 'POST',
-        data: JSON.stringify({
-            'symptoms': symps  // Send the confirmed symptoms to the backend
-        }),
-        dataType: 'json',
-        contentType: "application/json",
-        success: function(response){
-            console.log(response);
-            symps = [];  // Clear the symptoms list after submission
-            SymFunc(response);  // Handle the disease suggestions
-            console.log("DONE!");
-        },
-        error: function(error){
-            console.log("Error: ", error);
+    $('#symptom').on('input', function() {
+        const query = $(this).val();
+        if (query.length > 0) {
+            $.get(`/symptom-suggestions?query=${query}`, function(data) {
+                $('#suggestions').empty().show(); // Clear previous suggestions
+                if (data.length > 0) {
+                    data.forEach(function(suggestion) {
+                        $('#suggestions').append(`<a href="#" class="list-group-item list-group-item-action">${suggestion}</a>`);
+                    });
+                } else {
+                    $('#suggestions').append('<div class="list-group-item">No suggestions found</div>');
+                }
+            });
+        } else {
+            $('#suggestions').hide(); // Hide suggestions if input is empty
         }
+    });
+
+    $('#suggestions').on('click', 'a', function() {
+        $('#symptom').val($(this).text());
+        $('#suggestions').hide();
     });
 });
 
-// Function to send symptoms and get disease suggestions
-function sendSymp(){
+// Function to dynamically add symptom cards
+function addSymptomCard(symptom) {
+    const cardHtml = 
+        `<div class="card w-75 center text-center shadow p-3 mb-5 bg-white rounded boxy" id="${symptom}">
+          <div class="card-body">
+            <p class="card-title">Do you have/feel ?</p>
+            <h5 class="card-text">${symptom}</h5>
+            <a class="btn btn-success" onclick="addSymptomToSearch('${symptom}');"> YES </a>
+            <a class="btn btn-danger" onclick="removeSymptomCard('${symptom}');"> NO </a>
+          </div>
+        </div>`;
+    $('#cards').append(cardHtml);
+}
+
+// Function to append selected symptoms to the search section
+function addSymptomToSearch(symptom) {
+    const symptomHtml = 
+        `<div class="card w-75 center text-center shadow p-3 mb-5 bg-white rounded boxy" id="search-${symptom}">
+          <div class="card-body">
+            <p class="card-title">Selected Symptom</p>
+            <h5 class="card-text">${symptom}</h5>
+            <button class="btn btn-outline-secondary" onclick="appendSymp();" type="button">Add</button>
+            <a class="btn btn-danger" onclick="removeSymptomFromSearch('${symptom}');">Remove</a>
+          </div>
+        </div>`;
+    $('#positive').append(symptomHtml);
+    $(`#${symptom}`).remove();
+}
+
+// Function to remove symptom card when NO is clicked
+function removeSymptomCard(symptom) {
+    $(`#${symptom}`).remove();
+}
+
+// Function to remove symptom from the search section
+function removeSymptomFromSearch(symptom) {
+    $(`#search-${symptom}`).remove();
+}
+
+// Function to show more symptoms after clicking "Find Out"
+function showMoreSymptoms() {
+    // Fetch the dataset_clean1.csv file
     $.ajax({
-        url: '/find',
-        type: 'POST',
-        data: JSON.stringify({
-            'symptoms': symps  // Send the symptoms to the backend
-        }),
+        url: '/dataset_clean1.csv', // Ensure this path points to your CSV file
         dataType: 'text',
-        contentType: "application/json",
-        success: function(response){
-            console.log(response);
-            symps = [];  // Clear the symptoms list after submission
-            showDis(response);  // Show the disease suggestions
-            console.log("DONE!");
+        success: function(data) {
+            const symptomsMap = processCSV(data); // Process the CSV to extract disease-symptom mapping
+
+            // Get the currently selected symptoms
+            const selectedSymptoms = $('#positive span').map(function() {
+                return $(this).text().trim();
+            }).get();
+
+            // Find diseases related to the selected symptoms
+            const relatedDiseases = findRelatedDiseases(symptomsMap, selectedSymptoms);
+
+            // Fetch additional symptoms for the related diseases
+            const additionalSymptoms = new Set();
+            relatedDiseases.forEach(disease => {
+                symptomsMap[disease].forEach(symptom => {
+                    if (!selectedSymptoms.includes(symptom)) {
+                        additionalSymptoms.add(symptom);
+                    }
+                });
+            });
+
+            // Display the additional symptoms as suggestions
+            displaySimilarSymptoms(additionalSymptoms);
         },
-        error: function(error){
-            console.log("Error: ", error);
+        error: function() {
+            console.error('Error fetching the dataset_clean1.csv file');
         }
     });
 }
 
-// Function to handle disease prediction results
-function SymFunc(data){
-    $("#cards").empty();
-    $("#details").empty();
-    $("#slogan").empty();
-    sbox.classList.toggle("m-fadeOut");
-    if(data.length === 0){
-        $("#cards").append('<div class="card text-center shadow rounded w-75 center"><div class="card-body"><h5 class="card-title">No results found!</h5></div></div>');
+// Function to display the similar symptoms dynamically
+function displaySimilarSymptoms(symptoms) {
+    const suggestionsDiv = $('#similar-symptoms');
+    suggestionsDiv.empty(); // Clear any previous suggestions
+
+    if (symptoms.size === 0) {
+        suggestionsDiv.append('<div>No similar symptoms found.</div>');
     } else {
-        $("#details").append('<h3 class="text-white" style="text-align: center; text-shadow: 0 0 20px #000000;"><b>Please answer the following questions.</b></h3><br/><br/><a role="button" aria-pressed="true" href="." class="btn btn-outline-light btn-small">BACK</a>');
-        data.forEach(function(name){
-            var name = name.replace(/\s/g, '-');
-            $("#cards").append(' <div class="card w-75 center text-center shadow p-3 mb-5 bg-white rounded boxy" id="'+name+'"> <div class="card-body"> <p class="card-title">Do you have/feel ?</p> <h4 class="card-text" style="text-align: center; text-shadow: 0 0 2px #000000;"><b>'+name+'</b></h4> <div class="row"> <div class="col-md-2"></div> <a class="btn btn-outline-success col-md-3 " onclick=appendNewSymp("'+ name +'");><b> YES </b></a> <div class="col-md-2"></div> <a class="btn btn-outline-danger col-md-3" onclick=deleteSymp("'+ name +'");><b> NO </b></a> <div class="col-md-2"></div> </div> </div> </div>');
+        symptoms.forEach(symptom => {
+            suggestionsDiv.append(`<div class="list-group-item list-group-item-action">${symptom}</div>`);
         });
     }
 }
 
-// Function to handle received data from image extraction
-function RecieveFunc(data){
-    $("#details").empty();
-    $("#cards").empty();
-    $("#slogan").empty();
-    if(data.entities.length === 0){
-        $("#cards").append('<div class="card text-center shadow rounded w-75 center"><div class="card-body"><h5 class="card-title">No results found!</h5></div></div>');
-    } else {
-        data.entities.forEach(function(name){
-            $("#cards").append(' <div class="card w-75 center text-center shadow p-3 mb-5 bg-white rounded boxy"> <div class="card-body"> <p class="card-title">Does it look like this?</p> <h4 class="card-text" style="text-align: center; text-shadow: 0 0 2px #000000;"><b>'+name+'</b></h4> <div class="row"> <div class="col-md-2"></div> <a class="btn btn-outline-success col-md-3 " onclick=appendNewSymp("'+ name +'");><b> YES </b></a> <div class="col-md-2"></div> <a class="btn btn-outline-danger col-md-3" onclick=deleteSymp("'+ name +'");><b> NO </b></a> <div class="col-md-2"></div> </div> </div> </div>');
-        });
+// Function to process the CSV file and create a disease-symptom mapping
+function processCSV(data) {
+    const rows = data.split('\n');
+    const symptomsMap = {};
+
+    rows.forEach(row => {
+        const columns = row.split(',');
+        if (columns.length < 3) return; // Skip invalid rows
+
+        const disease = columns[0]?.trim(); // First column is the disease
+        const symptom = columns[1]?.trim(); // Second column is the symptom
+
+        if (disease && symptom) {
+            if (!symptomsMap[disease]) {
+                symptomsMap[disease] = [];
+            }
+            symptomsMap[disease].push(symptom);
+        }
+    });
+
+    return symptomsMap;
+}
+
+// Function to find related diseases based on selected symptoms
+function findRelatedDiseases(symptomsMap, selectedSymptoms) {
+    const relatedDiseases = [];
+
+    for (const [disease, symptoms] of Object.entries(symptomsMap)) {
+        // Check if any selected symptom matches the symptoms of the disease
+        if (selectedSymptoms.some(symptom => symptoms.includes(symptom))) {
+            relatedDiseases.push(disease);
+        }
     }
+
+    return relatedDiseases;
 }

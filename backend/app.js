@@ -7,10 +7,13 @@ import { drugExtraction } from './medicine_extractor.js';
 import { calculateAprioriConfidence, predDis } from './symptoms.js';
 import { symptomsData } from './symptomsdata.js';
 
+// Get the current directory using import.meta.url for ES modules
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+
 const app = express();
 const upload = multer();
 
-// Define the absolute paths to the CSV files
+// Define the absolute paths to the CSV files (same as before)
 const bucketmapPath = 'C:\\DE\\MedWise-AI\\backend\\bucketmap.csv';
 const bucketPath = 'C:\\DE\\MedWise-AI\\backend\\bucket.csv';
 const datasetClean1Path = 'C:\\DE\\MedWise-AI\\backend\\dataset_clean1.csv';
@@ -43,7 +46,7 @@ loadCSV(datasetClean1Path, datasetClean);
 
 app.use(express.json());
 
-// Serve static files (like images, stylesheets, and HTML) from the current directory
+// Serve static files (like images, stylesheets, and HTML) from the backend directory
 app.use(express.static('C:\\DE\\MedWise-AI\\backend'));
 
 // Define a route for the root URL ("/") to serve main.html
@@ -71,7 +74,6 @@ app.post('/image', upload.single('file'), (req, res) => {
 });
 
 // Route to handle disease prediction based on symptoms
-// Route to handle disease prediction based on symptoms
 app.post('/disease', (req, res) => {
   const { symptoms } = req.body;
   try {
@@ -83,7 +85,6 @@ app.post('/disease', (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 
 // New route for symptom suggestions
 app.get('/symptom-suggestions', (req, res) => {
