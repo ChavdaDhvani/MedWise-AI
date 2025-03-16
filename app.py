@@ -26,7 +26,7 @@ def search():
     a, b, c, d = solver(data)
     return jsonify(a)
 
-CSV_PATH = r"C:\MedWise-AI\dataset_clean1.csv"
+CSV_PATH = r"C:/MedWise-AI/dataset_clean1.csv"
 
 @app.route('/find', methods=['POST'])
 def find_symptoms():

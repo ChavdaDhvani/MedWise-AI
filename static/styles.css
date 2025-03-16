@@ -1,9 +1,9 @@
   body
     {
         margin: auto;
-        background: url('wall2.jpg') repeat fixed;
+        background: url('wall2.jpg') fixed;
         overflow: scroll;
-        background-size: 1920px 1080px;
+        background-size: 1520px 1000px;
         font-family: "Aldrich", sans-serif;
       
       
