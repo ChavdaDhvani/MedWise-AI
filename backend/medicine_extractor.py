@@ -7,20 +7,15 @@ import spacy
 nlp = spacy.load("en_core_web_sm")
 
 # Load drug dictionary
-with open('drugs.json', 'r') as f:
+with open('drugs.json', 'r', encoding="utf-8") as f:
     drugs_dict = json.load(f)
 
 def text_from_image(img):
-    # Read the image file and convert to a format EasyOCR can process
-    img_data = np.array(img.read())  # Read image data as numpy array
+    img_data = np.frombuffer(img.read(), dtype=np.uint8)  # Read image data as numpy array
     reader = easyocr.Reader(['en'])  # Initialize EasyOCR reader
     result = reader.readtext(img_data)  # Perform OCR on the image
 
-    # Extract text from the result
-    all_text = []
-    for (bbox, text, prob) in result:
-        all_text.append(text)  # Collect recognized text
-
+    all_text = [text for (_, text, _) in result]
     return all_text
 
 def drug_extraction(img):
@@ -29,19 +24,11 @@ def drug_extraction(img):
 
     # Use spaCy's NLP model to process the text and extract entities
     doc = nlp(all_text)
-    drug_entities = []
-    
-    # Loop through the detected entities
-    for ent in doc.ents:
-        if ent.label_ == "PRODUCT":  # 'PRODUCT' often includes drugs in general NER
-            if ent.text.lower() in drugs_dict["drugs"]:  # Match against the drugs dictionary
-                drug_entities.append(ent.text)
+    drug_entities = [ent.text for ent in doc.ents if ent.label_ == "PRODUCT" and ent.text.lower() in drugs_dict["drugs"]]
     
     print("Extracted Drug Entities:", drug_entities)
     return drug_entities
 
 if __name__ == "__main__":
-    # Use an image containing text for drug extraction
-    # Example: img = open('image.jpg', 'rb')
     img = open('path_to_your_image.jpg', 'rb')  # Update the path to your image
     drug_extraction(img)
