@@ -1,12 +1,9 @@
 from flask import Flask, request, render_template, jsonify
-from backend.medicine_extractor import *
-from backend.symptoms import *
-import json
 import pandas as pd
 
-b, c, d = None, None, None
-
 app = Flask(__name__)
+
+CSV_PATH = r"C:/MedWise-AI/dataset_clean1.csv"
 
 @app.route('/')
 def index():
@@ -19,37 +16,57 @@ def solve():
     print(type(annotation))
     return jsonify(annotation.get_entity_annotations(return_dictionary=True))
 
-@app.route('/disease', methods=['POST'])
-def search():
-    global b, c, d
-    data = request.get_json().get('symptoms', [])
-    a, b, c, d = solver(data)
-    return jsonify(a)
-
-CSV_PATH = r"C:/MedWise-AI/dataset_clean1.csv"
-
 @app.route('/find', methods=['POST'])
 def find_symptoms():
     try:
         # Load CSV data
-        df = pd.read_csv(CSV_PATH)
+        df = pd.read_csv(CSV_PATH, names=["disease", "symptom", "number"])
 
-        # Assuming the first column contains symptoms
-        symptom_list = df.iloc[:, 0].dropna().tolist()
+        # Get user symptoms from request
+        user_symptoms = request.get_json().get('symptoms', [])
+        user_symptoms = set(user_symptoms)  # Convert list to set for easy lookup
 
-        return jsonify({"symptoms": symptom_list})
+        # Find all numbers associated with the user symptoms
+        matched_rows = df[df["symptom"].isin(user_symptoms)]
+        related_numbers = matched_rows["number"].unique()
+
+        if len(related_numbers) == 0:
+            return jsonify({"suggested_symptoms": []})  # No matches found
+
+        # Find all symptoms with the same numbers
+        related_symptoms = df[df["number"].isin(related_numbers)]["symptom"].unique()
+
+        # Remove already selected symptoms
+        suggested_symptoms = list(set(related_symptoms) - user_symptoms)
+
+        return jsonify({"suggested_symptoms": suggested_symptoms[:4]})  # Return top 8 suggestions
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(debug=True)
+@app.route('/disease', methods=['POST'])
+def search():
+    try:
+        df = pd.read_csv(CSV_PATH, names=["disease", "symptom", "number"])
 
-@app.route('/find', methods=['POST'])
-def super():
-    data = request.get_json().get('symptoms', [])
-    print(data)
-    return react_out(data, b, c, d)
+        user_symptoms = request.get_json().get('symptoms', [])
+        user_symptoms = set(user_symptoms)
+
+        matched_rows = df[df["symptom"].isin(user_symptoms)]
+
+        if matched_rows.empty:
+            return render_template("result.html", disease="No matching disease found.")
+
+        # Find the most frequently occurring number
+        most_common_number = matched_rows["number"].value_counts().idxmax()
+
+        # Get the corresponding disease
+        disease = df[df["number"] == most_common_number]["disease"].iloc[0]
+
+        return render_template("result.html", disease=disease)
+
+    except Exception as e:
+        return render_template("result.html", disease="Error: " + str(e))
 
 if __name__ == '__main__':
     app.run(debug=True, port=3000)

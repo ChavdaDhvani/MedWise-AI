@@ -1,4 +1,4 @@
-var symps = [];
+var symps = [];  // Store selected symptoms
 var sbox = document.getElementById("sbox");
 
 $(document).ready(function () {
@@ -12,18 +12,134 @@ $(document).ready(function () {
         localStorage.setItem("key", "keyValue");
     }
 });
-
-function appendNewSymp(name) {
-    console.log(name);
-    symps.push(name.replace("-", " "));
-    $("#positive").append(' <span class="badge badge-secondary">' + name + '</span> ');
-    $('#' + name).remove();
+function startHelp() {
+    setTimeout(function () {
+        introJs().setOptions({
+            showStepNumbers: true,
+            showBullets: true,
+            exitOnOverlayClick: false, // Prevent accidental close
+            disableInteraction: false, // Allow interactions
+            steps: [
+                {
+                    element: "#file",  
+                    intro: "Attach an image of your prescription here",
+                    position: "bottom"
+                },
+                {
+                    element: "#but_upload",  
+                    intro: "Upload and wait",
+                    position: "bottom"
+                },
+                {
+                    element: "#symptom",  
+                    intro: "Enter your symptoms",
+                    position: "bottom"
+                },
+                {
+                    element: ".input-group-append button",  
+                    intro: "Add any number of symptoms",
+                    position: "bottom"
+                },
+                {
+                    element: "#find_out",  
+                    intro: "Add and wait",
+                    position: "bottom"
+                },
+                {
+                    element: "#authorize_button",  
+                    intro: "Sync with Google for additional functions",
+                    position: "bottom"
+                }
+            ]
+        }).start();
+    }, 500); 
 }
 
-function deleteSymp(name) {
-    $('#' + name).remove();
+
+// Function to add a new symptom when "YES" is clicked
+function appendNewSymp(symptom) {
+    if (!symps.includes(symptom)) {
+        symps.push(symptom);
+
+        // Append to "Your Symptoms" card with a remove button
+        $("#positive").append(`
+            <span class="badge badge-secondary m-1" id="symp-${symptom}">
+                ${symptom} 
+               
+            </span>
+        `);
+
+        // Show "Your Symptoms" card if hidden
+        $("#your-symptoms-card").show();
+    }
+
+    // Remove the suggestion card after selection
+    $("#" + symptom).fadeOut(300, function () { $(this).remove(); });
 }
 
+// Function to remove a symptom when "NO" is clicked (removes from suggestion list only)
+function removeSymp(symptom) {
+    $("#" + symptom).fadeOut(300, function () { $(this).remove(); });
+}
+
+// Function to remove a symptom from "Your Symptoms" card
+function removeSympFromSelected(symptom) {
+    symps = symps.filter(s => s !== symptom);
+    $("#symp-" + symptom).fadeOut(300, function () { $(this).remove(); });
+
+    // Hide "Your Symptoms" card if no symptoms left
+    if (symps.length === 0) {
+        $("#your-symptoms-card").hide();
+    }
+}// Function to add a new symptom when "YES" is clicked
+function appendNewSymp(symptom) {
+    if (!symps.includes(symptom)) {
+        symps.push(symptom);
+
+        // Append to "Your Symptoms" card with a remove button
+        $("#positive").append(`
+            <span class="badge badge-secondary m-1" id="symp-${symptom.replace(/\s+/g, '-')}">
+                ${symptom} 
+                <a href="#" class="text-danger ml-1" onclick="removeSympFromSelected('${symptom}');">✖</a>
+            </span>
+        `);
+
+        // Show "Your Symptoms" card if hidden
+        $("#your-symptoms-card").show();
+    }
+
+    // Remove the suggestion card with fadeOut effect
+    let cardID = "#" + CSS.escape(symptom);
+    if ($(cardID).length) {
+        $(cardID).fadeOut(300, function () { $(this).remove(); });
+    }
+}
+
+// Function to remove a symptom when "NO" is clicked
+function removeSymp(symptom) {
+    let cardID = "#" + CSS.escape(symptom);
+    if ($(cardID).length) {
+        $(cardID).fadeOut(300, function () { $(this).remove(); });
+    }
+}
+
+// Function to remove a symptom from "Your Symptoms" card
+function removeSympFromSelected(symptom) {
+    symps = symps.filter(s => s !== symptom);
+    let badgeID = "#symp-" + symptom.replace(/\s+/g, '-');
+    if ($(badgeID).length) {
+        $(badgeID).fadeOut(300, function () { $(this).remove(); });
+    }
+
+    // Hide "Your Symptoms" card if no symptoms left
+    if (symps.length === 0) {
+        $("#your-symptoms-card").hide();
+    }
+}
+
+
+
+// Function to add symptoms manually
 function appendSymp() {
     var a = $("#symptom").val().trim();
     if (a === "") {
@@ -31,8 +147,11 @@ function appendSymp() {
         return;
     }
     symps.push(a);
-    $("#tags").append('<span class="badge badge-secondary m-1">' + a + '</span>');
+    $("#tags").append(`<span class="badge badge-secondary m-1">${a}</span>`);
     $("#symptom").val("");
+    
+    // Show "Your Symptoms" card if not already displayed
+    $("#your-symptoms-card").show();
 }
 
 // Event listener for "Find Out" button (fetches symptom suggestions)
@@ -40,36 +159,63 @@ document.getElementById("find_out").addEventListener("click", function () {
     fetch("/find", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symptoms: symps }),
     })
     .then(response => response.json())
     .then(data => {
+        let cardsDiv = document.getElementById("cards");
+        cardsDiv.innerHTML = "";  // Clear previous suggestions
+
         if (data.error) {
             console.error("Error:", data.error);
             alert("Failed to load symptoms!");
             return;
         }
 
-        let cardsDiv = document.getElementById("cards");
-        cardsDiv.innerHTML = "";  // Clear existing content
+        if (data.suggested_symptoms.length === 0) {
+            cardsDiv.innerHTML = "<p>No additional symptoms found.</p>";
+            return;
+        }
 
-        data.symptoms.forEach(symptom => {
+        // Display suggested symptoms dynamically
+        data.suggested_symptoms.forEach(symptom => {
             let cardHtml = `
-                <div class="card w-75 center text-center shadow p-3 mb-5 bg-white rounded boxy" id="${symptom}">
+                <div class="card w-75 center text-center shadow p-3 mb-3 bg-white rounded" id="${symptom}">
                     <div class="card-body">
                         <p class="card-title">Do you have/feel?</p>
                         <h5 class="card-text">${symptom}</h5>
                         <a class="btn btn-success" onclick="appendNewSymp('${symptom}');"> YES </a>
-                        <a class="btn btn-danger" onclick="appendNewSymp(null);"> NO </a>
+                        <a class="btn btn-danger" onclick="removeSymp('${symptom}');"> NO </a>
                     </div>
                 </div>`;
             
             cardsDiv.innerHTML += cardHtml;
         });
 
+        $("html, body").animate({
+            scrollTop: $("#cards").offset().top
+        }, 800); // 800ms smooth scroll
+        
+
     })
     .catch(error => console.error("Error:", error));
 });
 
+// Event listener for "SEARCH" button (finds possible disease based on selected symptoms)
+document.getElementById("disease").addEventListener("click", function () {
+    fetch("/disease", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symptoms: symps }),
+    })
+    .then(response => response.text())
+    .then(html => {
+        document.open();
+        document.write(html);
+        document.close();
+    })
+    .catch(error => console.error("Error:", error));
+});
 
 function showDis(data) {
     $("#cards").empty();
@@ -181,4 +327,4 @@ function listUpcomingEvents() {
             appendPre('No upcoming events found.');
         }
     });
-}
+};
